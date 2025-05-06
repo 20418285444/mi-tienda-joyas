@@ -1,0 +1,438 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Shakti Joyas - Tienda online de joyas exclusivas, anillos, collares y más.">
+    <meta name="keywords" content="joyas, anillos, collares, shakti joyas, tienda online">
+    <title>Shakti Joyas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Playfair Display', serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        /* Barra de navegación */
+        nav {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav .logo {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: #d4af37;
+        }
+
+        /* Sección de héroe (banner) */
+        .hero {
+            height: 100vh;
+            background: url('https://via.placeholder.com/1920x1080') center/cover no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .hero h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 50px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+        }
+
+        .hero p {
+            font-size: 22px;
+        }
+
+        /* Sección de productos */
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+            padding: 15px;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .product-card h3 {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #1a1a1a;
+        }
+
+        .product-card p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .product-card button {
+            background-color: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .product-card button:hover {
+            background-color: #d4af37;
+        }
+
+        /* Carrito */
+        .cart {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            width: 300px;
+        }
+
+        .cart.active {
+            display: block;
+        }
+
+        .cart h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .cart ul {
+            list-style: none;
+        }
+
+        .cart ul li {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cart button {
+            background-color: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .cart button:hover {
+            background-color: #d4af37;
+        }
+
+        /* Sección de contacto */
+        .contact {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .contact h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+
+        .contact form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .contact input, .contact textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .contact button {
+            background-color: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .contact button:hover {
+            background-color: #d4af37;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Responsividad */
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .products {
+                grid-template-columns: 1fr;
+            }
+
+            .cart {
+                width: 80%;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <nav>
+        <div class="logo">SHAKTI JOYAS</div>
+        <ul>
+            <li><a href="#home">Inicio</a></li>
+            <li><a href="#products">Productos</a></li>
+            <li><a href="#contact">Contacto</a></li>
+            <li><a href="#" id="cart-toggle">Carrito (<span id="cart-count">0</span>)</a></li>
+        </ul>
+    </nav>
+
+    <!-- Sección de héroe -->
+    <section class="hero" id="home">
+        <div>
+            <h1>SHAKTI JOYAS</h1>
+            <p>Descubre nuestra colección única de anillos, collares y más</p>
+        </div>
+    </section>
+
+    <!-- Sección de productos -->
+    <section class="products" id="products">
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Anillo de Oro">
+            <h3>Anillo de Oro</h3>
+            <p>$150.00</p>
+            <button onclick="addToCart('Anillo de Oro', 150.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Collar de Plata">
+            <h3>Collar de Plata</h3>
+            <p>$200.00</p>
+            <button onclick="addToCart('Collar de Plata', 200.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Pendientes de Diamante">
+            <h3>Pendientes de Diamante</h3>
+            <p>$300.00</p>
+            <button onclick="addToCart('Pendientes de Diamante', 300.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Pulsera de Perlas">
+            <h3>Pulsera de Perlas</h3>
+            <p>$120.00</p>
+            <button onclick="addToCart('Pulsera de Perlas', 120.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Anillo de Zafiro">
+            <h3>Anillo de Zafiro</h3>
+            <p>$250.00</p>
+            <button onclick="addToCart('Anillo de Zafiro', 250.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Collar de Esmeralda">
+            <h3>Collar de Esmeralda</h3>
+            <p>$350.00</p>
+            <button onclick="addToCart('Collar de Esmeralda', 350.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Pendientes de Oro">
+            <h3>Pendientes de Oro</h3>
+            <p>$180.00</p>
+            <button onclick="addToCart('Pendientes de Oro', 180.00)">Agregar al Carrito</button>
+        </div>
+        <div class="product-card">
+            <img src="https://via.placeholder.com/250" alt="Pulsera de Diamante">
+            <h3>Pulsera de Diamante</h3>
+            <p>$400.00</p>
+            <button onclick="addToCart('Pulsera de Diamante', 400.00)">Agregar al Carrito</button>
+        </div>
+    </section>
+
+    <!-- Sección de contacto -->
+    <section class="contact" id="contact">
+        <h2>Contáctanos</h2>
+        <form>
+            <input type="text" placeholder="Nombre" required>
+            <input type="email" placeholder="Correo Electrónico" required>
+            <textarea placeholder="Mensaje" rows="5" required></textarea>
+            <button type="submit">Enviar</button>
+        </form>
+    </section>
+
+    <!-- Carrito -->
+    <div class="cart" id="cart">
+        <h2>Carrito de Compras</h2>
+        <ul id="cart-items"></ul>
+        <p>Total: $<span id="cart-total">0.00</span></p>
+        <button onclick="clearCart()">Vaciar Carrito</button>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2025 SHAKTI JOYAS. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        let cart = [];
+        let total = 0;
+
+        // Mostrar/ocultar carrito
+        document.getElementById('cart-toggle').addEventListener('click', () => {
+            document.getElementById('cart').classList.toggle('active');
+        });
+
+        // Agregar producto al carrito
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            total += price;
+            updateCart();
+        }
+
+        // Actualizar carrito
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
+                cartItems.appendChild(li);
+            });
+            cartCount.textContent = cart.length;
+            cartTotal.textContent = total.toFixed(2);
+        }
+
+        // Vaciar carrito
+        function clearCart() {
+            cart = [];
+            total = 0;
+            updateCart();
+        }
+    </script>
+</body>
+</html>
